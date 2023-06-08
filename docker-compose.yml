@@ -1,0 +1,42 @@
+version: "3"
+services:
+  nginx:
+    build:
+      context: .
+      dockerfile: docker/nginx/Dockerfile
+    ports:
+      - "80:80"
+    depends_on:
+      - app
+    volumes:
+      - ./:/data/
+      - ./logs/nginx:/var/log/nginx/
+
+  app:
+    build:
+      context: .
+      args:
+        - PHP_VERSION=8.2
+        - XDEBUG_PORT=9000
+      dockerfile: docker/app/Dockerfile
+    depends_on:
+      - postgres
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+    environment:
+      PHP_IDE_CONFIG: serverName=${XDEBUG_SERVER_NAME:-measurement.docker}
+    volumes:
+      - ./:/data/
+      - ./logs/php.log:/var/log/fpm-php.www.log
+
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_HOST_AUTH_METHOD: trust
+      POSTGRES_DB: measurement
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      TZ: 'Europe/Moscow'
+      PGTZ: 'Europe/Moscow'
+    ports:
+      - "5432:5432"
